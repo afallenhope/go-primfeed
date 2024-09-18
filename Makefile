@@ -3,3 +3,6 @@ build:
 
 run: build
 	@./bin/primfeed
+
+test:
+	@go test -v ./...
