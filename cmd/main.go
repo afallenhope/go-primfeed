@@ -79,7 +79,7 @@ func main() {
 	// pf.SetToken(os.Getenv("PRIMFEED_TOKEN"))
 
 	if err != nil {
-		fmt.Printf("Could not login: %v", err)
+		fmt.Printf("Could not login: %v\n", err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func main() {
 
 	err = pf.GetMe()
 	if err != nil {
-		fmt.Printf("Could not get profile: %v", err)
+		fmt.Printf("Could not get profile: %v\n", err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func main() {
 
 	err = pf.GetMe()
 	if err != nil {
-		fmt.Printf("error getting profile: %v", err)
+		fmt.Printf("error getting profile: %v\n", err)
 		return
 	}
 
@@ -122,13 +122,13 @@ func main() {
 		fmt.Println("You have no new notifications")
 	} else {
 		fmt.Printf("You have %d new notifications\n", count)
-		// notifications, err := pf.GetNotifications()
-		// if err != nil {
-		// 	fmt.Println("could not get notifications", err)
-		// 	return
-		// }
+		notifications, err := pf.GetNotifications()
+		if err != nil {
+			fmt.Println("could not get notifications", err)
+			return
+		}
 
-		// fmt.Printf("Notifications: %v\n", notifications)
+		fmt.Printf("Notifications: %v\n", notifications)
 	}
 
 }

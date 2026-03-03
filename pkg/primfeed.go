@@ -226,7 +226,7 @@ func (p *Primfeed) Login(username string, password string, company any) (LoginRe
 		return LoginResponse{}, fmt.Errorf("login failed: %v\n\n", err)
 	}
 
-	p.SetToken(loginResponse.Token)
+	// p.SetToken(loginResponse.Token)
 
 	return loginResponse, nil
 
@@ -296,7 +296,12 @@ func (p *Primfeed) Request(method string, path string, data interface{}, headers
 		return err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", p.Token))
+	req.Header.Set("User-Agent", "FKS Client/1.5 (Wayland; Gentoo; Linux; x86_64)")
+
+	if p.Token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", p.Token))
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	for key, value := range headers {
@@ -322,6 +327,16 @@ func (p *Primfeed) Request(method string, path string, data interface{}, headers
 
 	if len(respBody) == 0 {
 		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	for _, cookie := range resp.Cookies() {
+		if strings.ToLower(cookie.Name) == "token" {
+			p.SetToken(cookie.Value)
+		}
 	}
 
 	if target != nil {
