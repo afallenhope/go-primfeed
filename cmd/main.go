@@ -113,7 +113,7 @@ func main() {
 
 	count, err := pf.GetNotificationCount()
 	if err != nil {
-		fmt.Printf("error getting notification count: %v", err)
+		fmt.Printf("error getting notification count: %v\n", err)
 		return
 	}
 
@@ -128,7 +128,30 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Notifications: %v\n", notifications)
+		for _, notification := range notifications.Notifications {
+			fmt.Printf("-- [%s Notification] --\n", notification.Type)
+
+			if notification.Content != "" {
+				fmt.Printf("Content: %s\n", notification.Content)
+			}
+
+			fmt.Printf("Created at: %s\n", notification.CreatedAt)
+
+			if notification.Notifications != nil {
+				for _, subNotification := range notification.Notifications {
+					fmt.Printf("  Sub: %s\n", subNotification.ID)
+					fmt.Printf("  Origin: %s (%s)\n", subNotification.Origin.Name, subNotification.Origin.Type)
+				}
+			}
+		}
 	}
 
+	tokens, err := pf.GetAppTokens()
+	if err != nil {
+		fmt.Printf("error getting app tokens: %v\n", err)
+		return
+	}
+	for _, token := range tokens {
+		fmt.Printf("- [ Token - %s ] -\nType: %s\nID: %s\nOS: %s\nBrowser: %s\n", token.CreatedAt, token.Type, token.ID, token.OS, token.Browser)
+	}
 }
