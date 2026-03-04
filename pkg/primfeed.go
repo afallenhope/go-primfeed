@@ -443,17 +443,17 @@ func (p *Primfeed) GetMe() error {
 	err := p.Request("GET", url, nil, nil, &profile)
 
 	if err != nil {
-		return fmt.Errorf("could not get profile %v", err)
+		return fmt.Errorf("could not get profile %+v", err)
 	}
 
 	followers, err := p.GetUserFollowers(profile.User.Handle)
 	if err != nil {
-		return fmt.Errorf("could not get followers %v", err)
+		return fmt.Errorf("could not get followers %+v", err)
 	}
 
 	follows, err := p.GetUserFollows(profile.User.Handle)
 	if err != nil {
-		return fmt.Errorf("could not get follows %v", err)
+		return fmt.Errorf("could not get follows %+v", err)
 	}
 
 	p.Me.Profile = profile
@@ -470,7 +470,7 @@ func (p *Primfeed) GetUserProfile(username string) (UserProfile, error) {
 	err := p.Request("GET", url, nil, nil, &profile)
 
 	if err != nil {
-		return profile, fmt.Errorf("could not get profile %v", err)
+		return profile, fmt.Errorf("could not get profile %+v", err)
 	}
 
 	return profile, nil
@@ -479,7 +479,7 @@ func (p *Primfeed) GetUserProfile(username string) (UserProfile, error) {
 func (p *Primfeed) FollowUser(username string) error {
 	profile, err := p.GetUserProfile(username)
 	if err != nil {
-		return fmt.Errorf("error getting profile to follow: %v", err)
+		return fmt.Errorf("error getting profile to follow: %+v", err)
 	}
 
 	return p.FollowById(profile.ID)
@@ -490,7 +490,7 @@ func (p *Primfeed) FollowById(id string) error {
 
 	err := p.Request("POST", url, nil, nil, nil)
 	if err != nil {
-		return fmt.Errorf("error following user: %v", err)
+		return fmt.Errorf("error following user: %+v", err)
 	}
 
 	return nil
@@ -499,7 +499,7 @@ func (p *Primfeed) FollowById(id string) error {
 func (p *Primfeed) UnfollowUser(username string) error {
 	profile, err := p.GetUserProfile(username)
 	if err != nil {
-		return fmt.Errorf("error unfollowing user: %v", err)
+		return fmt.Errorf("error unfollowing user: %+v", err)
 	}
 
 	return p.UnfollowById(profile.ID)
@@ -521,7 +521,7 @@ func (p *Primfeed) UpdateProfile(profile interface{}) error {
 
 	err := p.Request("PATCH", url, profile, nil, nil)
 	if err != nil {
-		return fmt.Errorf("could not update profile: %v", err)
+		return fmt.Errorf("could not update profile: %+v", err)
 	}
 
 	return nil
@@ -552,12 +552,22 @@ func (p *Primfeed) GetNotificationCount() (int, error) {
 	return count, nil
 }
 
+func (p *Primfeed) ClearNews() error {
+	url := fmt.Sprintf("%s/notifications/set-last-update-seen", p.BaseURL)
+
+	err := p.Request("PATCH", url, nil, nil, nil)
+
+	if err != nil {
+		return fmt.Errorf("could not clear news: %+v\n", err)
+	}
+}
+
 func (p *Primfeed) Like(post string) error {
 	url := fmt.Sprintf("%s/post/%s/like", p.BaseURL, post)
 
 	err := p.Request("POST", url, nil, nil, nil)
 	if err != nil {
-		return fmt.Errorf("could not like post: %v", err)
+		return fmt.Errorf("could not like post: %+v\n", err)
 	}
 
 	return nil
@@ -574,7 +584,7 @@ func (p *Primfeed) GetFeed(id string, page int) (FeedResponse, error) {
 
 	err := p.Request("GET", url, nil, nil, &feedResponse)
 	if err != nil {
-		return FeedResponse{}, fmt.Errorf("could not load feed: %v", err)
+		return FeedResponse{}, fmt.Errorf("could not load feed: %+v", err)
 	}
 
 	return feedResponse, nil
@@ -586,7 +596,7 @@ func (p *Primfeed) GetAppTokens() ([]AppToken, error) {
 	var appTokensResponse []AppToken
 	err := p.Request("GET", url, nil, nil, &appTokensResponse)
 	if err != nil {
-		return []AppToken{}, fmt.Errorf("could not get app tokens: %v", err)
+		return []AppToken{}, fmt.Errorf("could not get app tokens: %+v", err)
 	}
 
 	return appTokensResponse, nil
@@ -598,7 +608,7 @@ func (p *Primfeed) DeleteAppToken(token string) error {
 	err := p.Request("DELETE", url, nil, nil, nil)
 
 	if err != nil {
-		return fmt.Errorf("could not delete app tokens: %v", err)
+		return fmt.Errorf("could not delete app tokens: %+v", err)
 	}
 
 	return nil
