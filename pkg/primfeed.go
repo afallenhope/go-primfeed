@@ -6,14 +6,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
+	"os"
 	"strings"
 )
 
 type Notification struct {
 	Type          string            `json:"type"`
-	GroupID       interface{}       `json:"groupId,omitempty"`
+	Content       string            `json:"content"`
 	CreatedAt     string            `json:"createdAt"`
-	Notifications []SubNotification `json:"notifications"`
+	GroupID       interface{}       `json:"groupId,omitempty"`
+	Notifications []SubNotification `json:"notifications,omitempty"`
+	Count         int               `json:"count,omitempty"`
+	PostId        string            `json:"postId,omitempty"`
 }
 
 type SubNotification struct {
@@ -23,17 +28,29 @@ type SubNotification struct {
 }
 
 type Origin struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Handle             string `json:"handle"`
-	Picture            string `json:"picture"`
-	PictureUuid        string `json:"pictureUuid"`
-	ProfilePictureUuid string `json:"profilePictureUuid"`
-	ProfileMedia       string `json:"profileMedia"`
-	BannerMedia        string `json:"bannerMedia,omitempty"`
-	Verified           bool   `json:"verified"`
-	Type               string `json:"type"`
-	IsUser             bool   `json:"isUser"`
+	ID                 string    `json:"id"`
+	Name               string    `json:"name"`
+	DisplayName        string    `json:"displayName"`
+	Handle             string    `json:"handle"`
+	Picture            string    `json:"picture"`
+	PictureUuid        string    `json:"pictureUuid"`
+	ProfilePictureUuid string    `json:"profilePictureUuid"`
+	ProfileMedia       string    `json:"profileMedia"`
+	BannerMedia        string    `json:"bannerMedia,omitempty"`
+	Verified           bool      `json:"verified"`
+	MaturityRatings    []string  `json:"maturityRatings"`
+	Type               string    `json:"type"`
+	ShowAiContent      bool      `json:"showAiContent"`
+	ShowRenderContent  bool      `json:"showRenderContent"`
+	TosAccepted        bool      `json:"tosAccepted"`
+	IsUser             bool      `json:"isUser"`
+	Affiliate          string    `json:"affiliate,omitempty"`
+	DeleteAt           string    `json:"deleteAt,omitempty"`
+	Cosmetics          Cosmetics `json:"cosmetics"`
+}
+
+type Cosmetics struct {
+	AvatarDecoration string `json:"avatarDecoration,omitempty"`
 }
 
 type NotificationsResponse struct {
@@ -191,6 +208,20 @@ type LoginResponse struct {
 	Error            string `json:"error,omitempty"`
 }
 
+type AppTokensResponse struct {
+	Data []AppToken `json:"data"`
+}
+
+type AppToken struct {
+	ID        string `json:"id"`
+	Browser   string `json:"browser"`
+	OS        string `json:"os"`
+	Type      string `json:"type"`
+	UpdatedAt string `json:"updatedAt"`
+	CreatedAt string `json:"createdAt"`
+	Current   bool   `json:"current"`
+}
+
 const (
 	APIURL string = "api.primfeed.com"
 	URL    string = "www.primfeed.com"
@@ -296,7 +327,7 @@ func (p *Primfeed) Request(method string, path string, data interface{}, headers
 		return err
 	}
 
-	req.Header.Set("User-Agent", "FKS Client/1.5 (Wayland; Gentoo; Linux; x86_64)")
+	req.Header.Set("User-Agent", "FKS/1.5 (Wayland; Gentoo; aarch64)")
 
 	if p.Token != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", p.Token))
@@ -332,6 +363,20 @@ func (p *Primfeed) Request(method string, path string, data interface{}, headers
 	if err != nil {
 		return err
 	}
+
+	// TODO: Better logging for debugging.
+	if err != nil {
+		return err
+	}
+
+	if os.Getenv("DEBUG") != "" {
+		r, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("---[DEBUG] Response---\n%s\n", string(r))
+	}
+	// -- End Debug --
 
 	for _, cookie := range resp.Cookies() {
 		if strings.ToLower(cookie.Name) == "token" {
@@ -508,7 +553,7 @@ func (p *Primfeed) GetNotificationCount() (int, error) {
 }
 
 func (p *Primfeed) Like(post string) error {
-	url := fmt.Sprintf("%s/pf/post/%s/like", p.BaseURL, post)
+	url := fmt.Sprintf("%s/post/%s/like", p.BaseURL, post)
 
 	err := p.Request("POST", url, nil, nil, nil)
 	if err != nil {
@@ -523,7 +568,7 @@ func (p *Primfeed) UnLike(post string) error {
 }
 
 func (p *Primfeed) GetFeed(id string, page int) (FeedResponse, error) {
-	url := fmt.Sprintf("%s/pf/%s/feed?page=%d", p.BaseURL, id, page)
+	url := fmt.Sprintf("%s/%s/feed?page=%d", p.BaseURL, id, page)
 
 	var feedResponse FeedResponse
 
@@ -533,4 +578,28 @@ func (p *Primfeed) GetFeed(id string, page int) (FeedResponse, error) {
 	}
 
 	return feedResponse, nil
+}
+
+func (p *Primfeed) GetAppTokens() ([]AppToken, error) {
+	url := fmt.Sprintf("%s/settings/user/security/app-tokens", p.BaseURL)
+
+	var appTokensResponse []AppToken
+	err := p.Request("GET", url, nil, nil, &appTokensResponse)
+	if err != nil {
+		return []AppToken{}, fmt.Errorf("could not get app tokens: %v", err)
+	}
+
+	return appTokensResponse, nil
+}
+
+func (p *Primfeed) DeleteAppToken(token string) error {
+	url := fmt.Sprintf("%s/settings/user/security/app-tokens/%s", p.BaseURL, token)
+
+	err := p.Request("DELETE", url, nil, nil, nil)
+
+	if err != nil {
+		return fmt.Errorf("could not delete app tokens: %v", err)
+	}
+
+	return nil
 }
